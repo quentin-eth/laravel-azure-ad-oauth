@@ -3,14 +3,15 @@
 namespace Metrogistics\AzureSocialite;
 
 use Illuminate\Support\Arr;
-use Laravel\Socialite\Two\User;
 use Laravel\Socialite\Two\AbstractProvider;
+use Laravel\Socialite\Two\InvalidStateException;
 use Laravel\Socialite\Two\ProviderInterface;
+use Laravel\Socialite\Two\User;
 
 class AzureOauthProvider extends AbstractProvider implements ProviderInterface
 {
-    const IDENTIFIER = 'AZURE_OAUTH';
-    protected $scopes = ['User.Read'];
+    const IDENTIFIER          = 'AZURE_OAUTH';
+    protected $scopes         = ['User.Read'];
     protected $scopeSeparator = ' ';
 
     protected function getAuthUrl($state)
@@ -27,7 +28,7 @@ class AzureOauthProvider extends AbstractProvider implements ProviderInterface
     {
         return array_merge(parent::getTokenFields($code), [
             'grant_type' => 'authorization_code',
-            'resource' => 'https://graph.microsoft.com',
+            'resource'   => 'https://graph.microsoft.com',
         ]);
     }
 
@@ -35,7 +36,7 @@ class AzureOauthProvider extends AbstractProvider implements ProviderInterface
     {
         $response = $this->getHttpClient()->get('https://graph.microsoft.com/v1.0/me/', [
             'headers' => [
-                'Authorization' => 'Bearer '.$token,
+                'Authorization' => 'Bearer ' . $token,
             ],
         ]);
 
@@ -54,11 +55,11 @@ class AzureOauthProvider extends AbstractProvider implements ProviderInterface
             $token = Arr::get($response, 'access_token')
         ));
 
-        $user->idToken = Arr::get($response, 'id_token');
+        $user->idToken   = Arr::get($response, 'id_token');
         $user->expiresAt = time() + Arr::get($response, 'expires_in');
 
         return $user->setToken($token)
-                    ->setRefreshToken(Arr::get($response, 'refresh_token'));
+            ->setRefreshToken(Arr::get($response, 'refresh_token'));
     }
 
     protected function mapUserToObject(array $user)
