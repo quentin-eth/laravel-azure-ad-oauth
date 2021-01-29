@@ -3,7 +3,6 @@
 namespace Metrogistics\AzureSocialite;
 
 use GuzzleHttp\Client;
-use Laravel\Socialite\Facades\Socialite;
 
 class AzureUser
 {
@@ -44,26 +43,26 @@ class AzureUser
     {
         $guzzle = new Client();
 
-        $response = $guzzle->post('https://login.microsoftonline.com/common/oauth2/token', [
+        $response = $guzzle->post('https://login.microsoftonline.com/' . config('azure-oath.credentials.tenant_id') . '/oauth2/token', [
             'form_params' => [
-                'client_id' => config('azure-oath.credentials.client_id'),
-                'scope' => 'user.read',
+                'client_id'     => config('azure-oath.credentials.client_id'),
+                'scope'         => 'user.read',
                 'refresh_token' => $this->get()->refreshToken,
-                'redirect_uri' => config('azure-oath.credentials.redirect'),
-                'grant_type' => 'refresh_token',
-                'client_secret' => config('azure-oath.credentials.client_secret')
-            ]
+                'redirect_uri'  => config('azure-oath.credentials.redirect'),
+                'grant_type'    => 'refresh_token',
+                'client_secret' => config('azure-oath.credentials.client_secret'),
+            ],
         ]);
 
         $token_response = json_decode($response->getBody());
 
-        $this->user->token = $token_response->access_token;
+        $this->user->token        = $token_response->access_token;
         $this->user->refreshToken = $token_response->refresh_token;
-        $this->user->expiresAt = $token_response->expires_on;
-        $this->user->expiresIn = $token_response->expires_in;
+        $this->user->expiresAt    = $token_response->expires_on;
+        $this->user->expiresIn    = $token_response->expires_in;
 
         session([
-            'azure_user' => $this->user
+            'azure_user' => $this->user,
         ]);
 
         return $this->get();
