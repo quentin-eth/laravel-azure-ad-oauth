@@ -2,28 +2,23 @@
 
 namespace Metrogistics\AzureSocialite\Middleware;
 
-use Illuminate\Contracts\Auth\Guard;
+use Closure;
+use Illuminate\Auth\Middleware\Authenticate as BaseMiddleware;
 use \Illuminate\Contracts\Auth\Authenticatable;
 
-class Authenticate implements Guard
+class Authenticate extends BaseMiddleware
 {
-    // public function handle($request, Closure $next, ...$guards)
-    // {
-    //     try{
-    //         $azure_user = app('azure-user');
-    //         $expires_in = $azure_user->get()->expiresIn;
-    //     }catch(\Exception $e){
-    //         auth()->logout();
+    public function handle($request, Closure $next, ...$guards)
+    {
+        $azure_user = app('azure-user');
 
-    //         throw new AuthenticationException('Unauthenticated.', $guards);
-    //     }
+        $expires_in = $azure_user->get()->expiresIn;
+        if ($expires_in < 0) {
+            $azure_user->refreshAccessToken();
+        }
 
-    //     if($expires_in < 3580){
-    //         $azure_user->refreshAccessToken();
-    //     }
-
-    //     return parent::handle($request, $next, $guards);
-    // }
+        return parent::handle($request, $next, $guards);
+    }
 
     protected $user;
 
@@ -56,7 +51,7 @@ class Authenticate implements Guard
      */
     public function user()
     {
-        if($this->user){
+        if ($this->user) {
             return $this->user;
         }
 

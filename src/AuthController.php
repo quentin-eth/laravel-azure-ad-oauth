@@ -14,15 +14,19 @@ class AuthController extends Controller
 
     public function handleOauthResponse()
     {
-        $user = Socialite::driver('azure-oauth')->user();
+        try {
+            $user = Socialite::driver('azure-oauth')->user();
+        } catch (\Exception $e) {
+            abort(401, 'You are not authorized to access this application.');
+        }
 
         $authUser = $this->findOrCreateUser($user);
 
         auth()->login($authUser, true);
 
-        // session([
-        //     'azure_user' => $user
-        // ]);
+        session([
+            'azure_user' => $user,
+        ]);
 
         return redirect(
             config('azure-oath.redirect_on_login')
@@ -32,7 +36,7 @@ class AuthController extends Controller
     protected function findOrCreateUser($user)
     {
         $user_class = config('azure-oath.user_class');
-        $authUser = $user_class::where(config('azure-oath.user_id_field'), $user->id)->first();
+        $authUser   = $user_class::where(config('azure-oath.user_id_field'), $user->id)->first();
 
         if ($authUser) {
             return $authUser;

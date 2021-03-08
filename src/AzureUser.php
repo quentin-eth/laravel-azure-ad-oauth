@@ -3,6 +3,7 @@
 namespace Metrogistics\AzureSocialite;
 
 use GuzzleHttp\Client;
+use \Illuminate\Auth\AuthenticationException;
 
 class AzureUser
 {
@@ -15,6 +16,11 @@ class AzureUser
 
     public function get()
     {
+        if (!$this->user) {
+            auth()->logout();
+            throw new AuthenticationException('Unauthenticated');
+        }
+
         $this->user->setExpiresIn($this->user->expiresAt - time());
 
         return $this->user;
@@ -41,24 +47,27 @@ class AzureUser
 
     public function refreshAccessToken()
     {
-        $guzzle = new Client();
-
-        $response = $guzzle->post('https://login.microsoftonline.com/' . config('azure-oath.credentials.tenant_id') . '/oauth2/token', [
-            'form_params' => [
-                'client_id'     => config('azure-oath.credentials.client_id'),
-                'scope'         => 'user.read',
-                'refresh_token' => $this->get()->refreshToken,
-                'redirect_uri'  => config('azure-oath.credentials.redirect'),
-                'grant_type'    => 'refresh_token',
-                'client_secret' => config('azure-oath.credentials.client_secret'),
-            ],
-        ]);
+        try {
+            $guzzle   = new Client();
+            $response = $guzzle->post('https://login.microsoftonline.com/' . config('azure-oath.credentials.tenant_id') . '/oauth2/v2.0/token', [
+                'form_params' => [
+                    'client_id'     => config('azure-oath.credentials.client_id'),
+                    'scope'         => 'user.read',
+                    'client_secret' => config('azure-oath.credentials.client_secret'),
+                    'grant_type'    => 'refresh_token',
+                    'refresh_token' => $this->get()->refreshToken,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            auth()->logout();
+            throw new AuthenticationException('Unauthenticated - Refresh token failed');
+        }
 
         $token_response = json_decode($response->getBody());
 
         $this->user->token        = $token_response->access_token;
         $this->user->refreshToken = $token_response->refresh_token;
-        $this->user->expiresAt    = $token_response->expires_on;
+        $this->user->expiresAt    = time() + $token_response->expires_in;
         $this->user->expiresIn    = $token_response->expires_in;
 
         session([

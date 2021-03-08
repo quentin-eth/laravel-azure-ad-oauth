@@ -29,6 +29,7 @@ The only changes you should have to make to your application are:
 
 * You will need to make the password field in the users table nullable.
 * You will need to have a `VARCHAR` field on the users table that is 36 characters long to store the Azure AD ID for the user. The default name for the field is `azure_id` but that can be changed in the config file: `'user_id_field' => 'azure_id',`.
+* If you need the Azure AD session to be active (to retrieve the AD user or roles) for logged in users, you will want to replace the default Authenticate middleware with the one provided by this package, this will ensure that the user has recently logged in via their Azure login: `'auth' => \Metrogistics\AzureSocialite\Middleware\Authenticate::class,`
 
 ## Usage
 
@@ -44,7 +45,7 @@ If you need to set additional user fields when the user model is created at logi
 
 ```
 \Metrogistics\AzureSocialite\UserFactory::userCallback(function($new_user){
-	$new_user->api_token = str_random(60);
+  $new_user->api_token = str_random(60);
 });
 ```
 
@@ -64,20 +65,20 @@ If you need to set additional user fields when the user model is created at logi
   1. Click on the "Manifest" tab.
   2. Add roles as necessary using the following format:
 
-		```
-		"appRoles": [
-		    {
-		      "allowedMemberTypes": [
-		        "User"
-		      ],
-		      "displayName": "Manager Role",
-		      "id": "08b0e9e3-8d88-4d99-b630-b9642a70f51e",// Any unique GUID
-		      "isEnabled": true,
-		      "description": "Manage stuff with this role",
-		      "value": "manager"
-		    }
-		  ],
-		```
+    ```
+    "appRoles": [
+        {
+          "allowedMemberTypes": [
+            "User"
+          ],
+          "displayName": "Manager Role",
+          "id": "08b0e9e3-8d88-4d99-b630-b9642a70f51e",// Any unique GUID
+          "isEnabled": true,
+          "description": "Manage stuff with this role",
+          "value": "manager"
+        }
+      ],
+    ```
   3. Click "Save"
 8. In the "Keys" tab, enter a description (something like "App Secret"). Set Duration to "Never Expires". Click "Save". Copy the whole key. This will not show again. You will need this value for the `AZURE_AD_CLIENT_SECRET` env variable.
 9. Click on the "Managed application" link (It will be the name of the application);
